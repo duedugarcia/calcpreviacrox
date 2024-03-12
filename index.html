@@ -15,7 +15,6 @@
     <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.7.5/dist/jspdf.plugin.autotable.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.7.5"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-   
 
     <title>Calculadora Previdenciária</title>
 
@@ -115,18 +114,22 @@
             <h2 class="mt-0">Calculadora de Simulação de Crédito Previdenciário</h2>
         </div>
     
-     <!-- Dados da Empresa -->
-    <div id="dadosEmpresa" class="mt-0">
-        <h4>Dados da Empresa</h4>
+        <div id="dadosEmpresa" class="mt-0">
+            <div style="display: flex; align-items: left; ">
+                <div style="display: flex; align-items: center;">
+                    <button class="btn btn-primary ml-0" onclick="NovoCliente()">Novo Cliente</button>
+                    <h4 class="ml-8"></h4>
+                </div>
+        </div>
             <div class="form-row">
             <div class="form-group col-md-0">
                 <label for="cnpj">CNPJ</label>
-                <input type="text" class="form-control" id="cnpj" name="cnpj" placeholder="Digite CNPJ"  required title="informe CNPJ" oninput="formatarCNPJ(this)">
-            </div>
+                <input type="text" class="form-control" id="cnpj" name="cnpj" placeholder="Digite CNPJ" required title="informe CNPJ" disabled oninput="formatarCNPJ(this)">
+        </div>
     
             <div class="form-group col-md-0">
                 <label for="responsavel">Nome</label>
-                <input type="text" class="form-control" id="responsavel" name="responsavel" placeholder="Digite Nome ou Responsável" required title="informe Nome/Razão Social">
+                <input type="text" class="form-control" id="responsavel" name="responsavel" placeholder="Digite Nome ou Responsável" disabled title="informe Nome/Razão Social">
             </div>
             <div class="form-group col-md-0">
                 <label for="percentual">Cálculo</label>
@@ -139,27 +142,23 @@
             </div>
         </div>
 
-   
         <div class="form-row">
             <div class="form-group col-md-0"> 
                 <label for="telefone">Telefone</label>
-                <input type="text" class="form-control" id="telefone" name="telefone"  placeholder="(99)9.9999-9999" required title="informe telefone" oninput="formatarTelefone(this)">
+                <input type="text" class="form-control" id="telefone" name="telefone"  placeholder="(99)9.9999-9999" required title="informe telefone" oninput="formatarTelefone(this)" disable >
             </div>
     
             <div class="form-group col-md-0">
                 <label for="email">E-mail</label>
-                <input type="text" class="form-control" id="email" name="email" placeholder="email@email.com.br" required title="informe o email">
+                <input type="text" class="form-control" id="email" name="email" placeholder="email@email.com.br"  required title="informe o email" disable>
             </div>
             <div class="form-group col-md-0">
                 <label for="mesano">Mes/Ano</label>
-                <input type="month" class="form-control" id="mesano" name="mesano" placeholder="Mês-Ano" required title="Informe Mes e Ano">
+                <input type="month" class="form-control" id="mesano" name="mesano" placeholder="Mês-Ano"  required title="Informe Mes e Ano">
             </div>
         </div>
     </div>
 
-
-<body>
- 
     <table id="tabela-itens">
         <thead>
             <tr>
@@ -186,20 +185,16 @@
             </script>
         </tbody>
     </table>
-
     <div class="btn-group"> 
-        <button class="btn btn-primary" onclick="calcular()">Calcular</button>
-         <p class="mt-2 mr-2" id="somaTotal">- </p>
+        
+        <button id="novoMesBtn" class="btn btn-warning" onclick="NovoMes()" disabled>Incluir Novo Mês</button>
+        <button id="calcularBtn" class="btn btn-secondary" onclick="calcular()" >Calcular</button>
+        <button id="exportarBtn" class="btn btn-success" onclick="exportarExcel2()" disabled>Finalizar e Exportar</button>
+        <p class="mt-2 mr-2" id="somaTotal">- </p>
     </div>
-    <div></div>
-    <div class="btn-group">
-        <button class="btn btn-info" onclick="exportarExcel2()">Exportar Excel</button>
-        <button class="btn btn-warning" onclick="limparDados()">Limpar Dados</button>
-    </div>
-
-
-
-    <script>
+     <script>
+        var wb = XLSX.utils.book_new();
+        var calculou = false;
         function formatarValor(event) {
             if (event.key === "Enter") {
             var input = event.target;
@@ -239,7 +234,7 @@
             var somaTotal = 0;
             var percentualInput = document.getElementById('percentual');
             var percentual = parseFloat(percentualInput.value) || 0;
-
+                       
             for (var i = 1; i < linhas.length; i++) {
                 var valorInput = linhas[i].cells[1].getElementsByTagName("input")[0];
                 var resultadoCell = linhas[i].cells[2];
@@ -250,12 +245,67 @@
 
                 somaTotal += resultado;
             }
-
             // Exibir a soma total
-            document.getElementById("somaTotal").innerHTML =   "Total de contribuição recuperada no período R$ " +  somaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById("somaTotal").innerHTML =   "Recuperado período R$ " +  somaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            var calculou = true;
+            document.getElementById("novoMesBtn").disabled = false;
+            document.getElementById("calcularBtn").disabled = false;
+            document.getElementById("exportarBtn").disabled = false;
         }
 
-        function limparDados() {
+    function NovoMes() {
+
+    var ws = XLSX.utils.aoa_to_sheet([[]]); // Criando uma folha vazia
+
+    
+        // Adicionando cabeçalho da tabela
+
+    var tabela = document.getElementById('tabela-itens');
+    var linhas = tabela.rows;
+    var somaTotal1 = 0;
+    var somaTotal2 = 0;
+    var percentualInput = document.getElementById('percentual');
+    var percentual = parseFloat(percentualInput.value) || 0;
+
+    var ws1 = XLSX.utils.aoa_to_sheet([[]]); // Criando uma folha vazia
+    ws1['!cols'] = [
+    { wch: 55, hidden: false, style: { align: { horizontal: 'left', vertical: 'middle' }, font: { bold: true, size: 12 } } }, // Coluna A
+    { wch: 19, hidden: false, style: { align: { horizontal: 'right', vertical: 'middle' }, font: { bold: false, size: 12 } } }, // Coluna B
+    { wch: 19, hidden: false, style: { align: { horizontal: 'right', vertical: 'middle' }, font: { bold: false, size: 12 } } }, // Coluna C
+    { wch: 19, hidden: false, style: { align: { horizontal: 'right', vertical: 'middle' }, font: { bold: false, size: 12 } } }, // Coluna C
+    ]; 
+
+    XLSX.utils.sheet_add_aoa(ws1, [['ORIGEM FOLHA', 'BASE VALOR ', 'CONTRIBUICÃO APURADA','RISCO']], { origin: 'A1' });
+
+    for (var i = 1; i < linhas.length; i++) {
+        var valorInput = linhas[i].cells[1].getElementsByTagName("input")[0].value;
+        var resultado = (parseFloat(valorInput.replace(',','.')) || 0) * (percentual / 100);
+        var valorInput1 = (parseFloat(valorInput.replace(',','.')) || 0);
+        var risco = linhas[i].cells[3].textContent || '';
+            XLSX.utils.sheet_add_aoa(ws1, [ [linhas[i].cells[0].textContent,
+        { v: valorInput1, t: 'n', z: '#,##0.00', a: { style: 2, align: 'right' } }, 
+        { v: resultado, t: 'n', z:'#,##0.00', a: { style: 2, align: 'right' } }, 
+        risco ]
+        ], { origin: 'A' + (i + 1) });        
+        somaTotal1 += valorInput1;
+        somaTotal2 += resultado;
+        }
+
+    XLSX.utils.sheet_add_aoa(ws1, [[{v: somaTotal1, t: 'n', z: '#,##0.00', a: { style: 2, align: 'right', hidden: false, size: 15, bold: true } } ]], { origin: 'B23' });
+    XLSX.utils.sheet_add_aoa(ws1, [[{v: somaTotal2, t: 'n', z: '#,##0.00', a: { style: 2, align: 'right' } } ]], { origin: 'C23' });
+    XLSX.utils.sheet_add_aoa(ws1, [['Total Apurado']], { origin: 'A23' });
+    var nomePlanilha = document.getElementById('mesano').value;
+    XLSX.utils.book_append_sheet(wb, ws1, nomePlanilha);
+
+    // Salvando o arquivo Excel
+    // var nomeArquivo = document.getElementById('cnpj').value + '_' + nomePlanilha + '.xlsx';
+    // XLSX.writeFile(wb, nomeArquivo);
+    
+    limparDados(); 
+    document.getElementById("mesano").focus();
+    
+    }
+    function limpartudo() {
         // Limpar dados da tabela
         var tabela = document.getElementById('tabela-itens');
         var linhas = tabela.rows;
@@ -268,83 +318,125 @@
             resultadoCell.innerHTML = ''; // Limpar o resultado
         }
 
-        // Limpar dados da empresa mantem empresa
-        // document.getElementById('cnpj').value = '';
-        // document.getElementById('responsavel').value = '';
-        //document.getElementById('telefone').value = '';
-        //document.getElementById('email').value = '';
-        //document.getElementById('mesano').value = '';
+        document.getElementById('cnpj').value = '';
+        document.getElementById('responsavel').value = '';
+        document.getElementById('telefone').value = '';
+        document.getElementById('email').value = '';
+        document.getElementById('mesano').value = '';
+        document.getElementById("somaTotal").innerHTML = '-';
+    }
+
+    function limparDados() {
+        // Limpar dados da tabela
+        var tabela = document.getElementById('tabela-itens');
+        var linhas = tabela.rows;
+
+        for (var i = 1; i < linhas.length; i++) {
+            var valorInput = linhas[i].cells[1].getElementsByTagName("input")[0];
+            var resultadoCell = linhas[i].cells[2];
+
+            valorInput.value = ''; // Limpar o campo de valor
+            resultadoCell.innerHTML = ''; // Limpar o resultado
+        }
 
         document.getElementById("somaTotal").innerHTML = '-';
-
-        for (var i = 1; i < riscoLinhas.length; i++) {
-            riscoLinhas[i].cells[2].innerHTML = ''; // Limpar o risco
-        }
     }
+
+    function NovoCliente() {
+
+        limpartudo();
+        document.getElementById("novoMesBtn").disabled = true;
+        document.getElementById("calcularBtn").disabled = false;
+        document.getElementById("exportarBtn").disabled = true;
+        document.getElementById("cnpj").disabled = false;
+        document.getElementById("responsavel").disabled = false;
+        document.getElementById("telefone").disabled = false;
+        document.getElementById("email").disabled = false;
+        document.getElementById("mesano").disabled = false;
+
+        document.getElementById("cnpj").focus();
+        }
 
     function exportarExcel2() {
     // Criando uma nova planilha do Excel
-    var wb = XLSX.utils.book_new();
-
-    // Adicionando uma nova folha à planilha
+    
+    // Adicionando uma nova folha à planilha cabeçalho
     var ws = XLSX.utils.aoa_to_sheet([[]]); // Criando uma folha vazia
 
     // Definindo a largura das colunas
-     ws['!cols'] = [
-     { wch: 60, hidden: false, style: { align: { horizontal: 'left', vertical: 'middle' }, font: { bold: true, size: 12 } } }, // Coluna A
+    ws['!cols'] = [
+     { wch: 13, hidden: false, style: { align: { horizontal: 'left', vertical: 'middle' }, font: { bold: true, size: 12 } } }, // Coluna A
      { wch: 25, hidden: false, style: { align: { horizontal: 'right', vertical: 'middle' }, font: { bold: false, size: 12 } } }, // Coluna B
-     { wch: 25, hidden: false, style: { align: { horizontal: 'right', vertical: 'middle' }, font: { bold: false, size: 12 } } }, // Coluna C
-     ];
-
+    ];
     // Adicionando informações da empresa ao cabeçalho
-    XLSX.utils.sheet_add_aoa(ws, [['CNPJ: ' + document.getElementById('cnpj').value]], { origin: 'A1' });
-    XLSX.utils.sheet_add_aoa(ws, [['Nome: ' + document.getElementById('responsavel').value]], { origin: 'B1' });
-    XLSX.utils.sheet_add_aoa(ws, [['Mes-Ano: ' + document.getElementById('mesano').value]], { origin: 'C1' });
-    XLSX.utils.sheet_add_aoa(ws, [['Fone: ' + document.getElementById('telefone').value]], { origin: 'A2' });
-    XLSX.utils.sheet_add_aoa(ws, [['Email: ' + document.getElementById('email').value]], { origin: 'B2' });
-    XLSX.utils.sheet_add_aoa(ws, [['% Ind: : ' + document.getElementById('percentual').value]], { origin: 'C2' });
+     XLSX.utils.sheet_add_aoa(ws, [['CNPJ: ']], { origin: 'A1' });
+     XLSX.utils.sheet_add_aoa(ws, [[document.getElementById('cnpj').value]], { origin: 'B1' });
+
+     XLSX.utils.sheet_add_aoa(ws, [['Nome: ' ]], { origin: 'A2' });
+     XLSX.utils.sheet_add_aoa(ws, [[ document.getElementById('responsavel').value]], { origin: 'B2' });
+
+     XLSX.utils.sheet_add_aoa(ws, [['Mes-Ano: ']], { origin: 'A3' });
+     XLSX.utils.sheet_add_aoa(ws, [[document.getElementById('mesano').value]], { origin: 'B3' });
+
+     XLSX.utils.sheet_add_aoa(ws, [['Fone: ' ]], { origin: 'A4' });
+     XLSX.utils.sheet_add_aoa(ws, [[ document.getElementById('telefone').value]], { origin: 'B4' });
+
+     XLSX.utils.sheet_add_aoa(ws, [['Email: ']], { origin: 'A5' });
+     XLSX.utils.sheet_add_aoa(ws, [[ document.getElementById('email').value]], { origin: 'B5' });
+
+     XLSX.utils.sheet_add_aoa(ws, [['% Ind: : ']], { origin: 'A6' });
+     XLSX.utils.sheet_add_aoa(ws, [[ document.getElementById('percentual').value]], { origin: 'B6' });
+
+     XLSX.utils.book_append_sheet(wb, ws, 'DADOS_CLIENTE');
 
     // Adicionando cabeçalho da tabela
-    
-    XLSX.utils.sheet_add_aoa(ws, [['ORIGEM FOLHA', 'BASE VALOR ', 'CONTRIBUICÃO APURADA','RISCO']], { origin: 'A4' });
 
-    // Adicionando dados da tabela
     var tabela = document.getElementById('tabela-itens');
     var linhas = tabela.rows;
     var somaTotal1 = 0;
     var somaTotal2 = 0;
-    //var percetualf = document.getElementById('percentual').value;
     var percentualInput = document.getElementById('percentual');
     var percentual = parseFloat(percentualInput.value) || 0;
+    
+    var ws1 = XLSX.utils.aoa_to_sheet([[]]); // Criando uma folha vazia
+    ws1['!cols'] = [
+     { wch: 55, hidden: false, style: { align: { horizontal: 'left', vertical: 'middle' }, font: { bold: true, size: 12 } } }, // Coluna A
+     { wch: 19, hidden: false, style: { align: { horizontal: 'right', vertical: 'middle' }, font: { bold: false, size: 12 } } }, // Coluna B
+     { wch: 19, hidden: false, style: { align: { horizontal: 'right', vertical: 'middle' }, font: { bold: false, size: 12 } } }, // Coluna C
+     { wch: 19, hidden: false, style: { align: { horizontal: 'right', vertical: 'middle' }, font: { bold: false, size: 12 } } }, // Coluna C
+     ]; 
+
+    XLSX.utils.sheet_add_aoa(ws1, [['ORIGEM FOLHA', 'BASE VALOR ', 'CONTRIBUICÃO APURADA','RISCO']], { origin: 'A1' });
 
     for (var i = 1; i < linhas.length; i++) {
         var valorInput = linhas[i].cells[1].getElementsByTagName("input")[0].value;
-    //  var resultado =  (parseFloat(valorInput.replace(',','.')) || 0) * 0.4;
-    //  var resultado = (parseFloat(valorInput.replace(',','.')) || 0) * (parseFloat(percentual.value) / 100);
         var resultado = (parseFloat(valorInput.replace(',','.')) || 0) * (percentual / 100);
         var valorInput1 = (parseFloat(valorInput.replace(',','.')) || 0);
         var risco = linhas[i].cells[3].textContent || '';
-  
-     //   XLSX.utils.sheet_add_aoa(ws, [[linhas[i].cells[0].textContent, valorInput1.toLocaleString('pt-BR', { style: 'decimal',  minimumFractionDigits: 2, align: 'center'} ), resultado.toLocaleString('pt-BR', { style: 'decimal', minimumFractionDigits: 2 }),  risco]], { origin: 'A' + (i + 4) });
-        XLSX.utils.sheet_add_aoa(ws, [ [linhas[i].cells[0].textContent,
-           { v: valorInput1, t: 'n', z: '#,##0.00', a: { style: 2, align: 'right' } }, 
-           { v: resultado, t: 'n', z:'#,##0.00', a: { style: 2, align: 'right' } }, 
-         risco ]
-        ], { origin: 'A' + (i + 4) });        
+        XLSX.utils.sheet_add_aoa(ws1, [ [linhas[i].cells[0].textContent,
+        { v: valorInput1, t: 'n', z: '#,##0.00', a: { style: 2, align: 'right' } }, 
+        { v: resultado, t: 'n', z:'#,##0.00', a: { style: 2, align: 'right' } }, 
+        risco ]
+        ], { origin: 'A' + (i + 1) });        
         somaTotal1 += valorInput1;
         somaTotal2 += resultado;
         }
 
-    XLSX.utils.sheet_add_aoa(ws, [[{v: somaTotal1, t: 'n', z: '#,##0.00', a: { style: 2, align: 'right', hidden: false, size: 15, bold: true } } ]], { origin: 'B26' });
-    XLSX.utils.sheet_add_aoa(ws, [[{v: somaTotal2, t: 'n', z: '#,##0.00', a: { style: 2, align: 'right' } } ]], { origin: 'C26' });
-    //XLSX.utils.sheet_add_aoa(ws, [[somaTotal2.toLocaleString('pt-BR', {style:'decimal', minimumFractionDigits:  2 })]], { origin: 'C26' });
-    XLSX.utils.sheet_add_aoa(ws, [['Total Apurado']], { origin: 'A26' });
+    XLSX.utils.sheet_add_aoa(ws1, [[{v: somaTotal1, t: 'n', z: '#,##0.00', a: { style: 2, align: 'right', hidden: false, size: 15, bold: true } } ]], { origin: 'B23' });
+    XLSX.utils.sheet_add_aoa(ws1, [[{v: somaTotal2, t: 'n', z: '#,##0.00', a: { style: 2, align: 'right' } } ]], { origin: 'C23' });
+    XLSX.utils.sheet_add_aoa(ws1, [['Total Apurado']], { origin: 'A23' });
     var nomePlanilha = document.getElementById('mesano').value;
-    XLSX.utils.book_append_sheet(wb, ws, nomePlanilha);
+    var ano = nomePlanilha.substring(0, 4);
+    XLSX.utils.book_append_sheet(wb, ws1, nomePlanilha);
 
     // Salvando o arquivo Excel
-    var nomeArquivo = document.getElementById('cnpj').value + '_' + nomePlanilha + '.xlsx';
+    var nomeArquivo = document.getElementById('cnpj').value + '_' + ano +'.xlsx';
     XLSX.writeFile(wb, nomeArquivo);
+    limpartudo();
+    calculou = false;
+    document.getElementById("novoMesBtn").disabled = false;
+    document.getElementById("calcularBtn").disabled = true;
+    document.getElementById("exportarBtn").disabled = true;
 }
 
 </script>
